@@ -1,0 +1,32 @@
+{
+  "name": "termpix",
+  "version": "2.0.0",
+  "description": "Terminal image encoder/decoder supporting iTerm2 and Sixel protocols",
+  "main": "src/index.js",
+  "bin": {
+    "termpix": "./bin/termpix.js"
+  },
+  "scripts": {
+    "start": "node bin/termpix.js",
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "terminal",
+    "image",
+    "iterm2",
+    "sixel",
+    "encoder",
+    "decoder",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.0.0",
+    "glob": "^13.0.6",
+    "sharp": "^0.33.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

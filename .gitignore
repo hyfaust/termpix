@@ -1,0 +1,12 @@
+node_modules/
+npm-debug.log*
+*.png
+*.jpg
+*.jpeg
+*.iterm2
+*.sixel
+*.enc
+*.txt
+!test/*.js
+.DS_Store
+Thumbs.db
