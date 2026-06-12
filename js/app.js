@@ -1,5 +1,5 @@
 /**
- * iTerm2-web Application v2.0
+ * TermPix Application v0.0.1
  *
  * Unified encoder/decoder supporting iTerm2 and Sixel protocols.
  * Features: batch operations, encryption, timing display, settings persistence.
@@ -8,6 +8,9 @@
 'use strict';
 
 var App = (function () {
+  // Version
+  var VERSION = '0.0.1';
+
   // State
   var encoderFiles = [];
   var encoderFramebuffer = null;
