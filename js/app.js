@@ -533,47 +533,86 @@ var App = (function () {
   }
 
   async function decodeBatchFiles(files) {
+    var allEntries = [];
     var batchList = document.getElementById('decoder-batch-list');
     batchList.innerHTML = '';
     document.getElementById('decoder-batch-results').style.display = 'block';
-    document.getElementById('decoder-batch-info').textContent = '0 / ' + files.length;
 
+    // First, extract all files (including from ZIPs)
+    for (var f = 0; f < files.length; f++) {
+      var file = files[f];
+      var isZip = file.name.toLowerCase().endsWith('.zip');
+
+      if (isZip) {
+        try {
+          var zipBuffer = await readFileAsArrayBuffer(file);
+          var zipEntries = await extractZipEntries(zipBuffer);
+          for (var z = 0; z < zipEntries.length; z++) {
+            if (zipEntries[z].error) {
+              allEntries.push({ name: zipEntries[z].name, error: zipEntries[z].error });
+            } else {
+              allEntries.push({ name: file.name + '/' + zipEntries[z].name, text: zipEntries[z].text });
+            }
+          }
+        } catch (err) {
+          allEntries.push({ name: file.name, error: 'ZIP error: ' + err.message });
+        }
+      } else {
+        try {
+          var text = await readFileAsText(file);
+          allEntries.push({ name: file.name, text: text });
+        } catch (err) {
+          allEntries.push({ name: file.name, error: err.message });
+        }
+      }
+    }
+
+    document.getElementById('decoder-batch-info').textContent = '0 / ' + allEntries.length;
     batchDecodeResults = [];
     var totalStart = performance.now();
 
-    for (var i = 0; i < files.length; i++) {
-      try {
-        var text = await readFileAsText(files[i]);
-        var startTime = performance.now();
-        var result = await decodeData(text);
-        result.elapsed = performance.now() - startTime;
-        result.filename = files[i].name.replace(/\.[^.]+$/, '') + '.png';
+    for (var i = 0; i < allEntries.length; i++) {
+      var entry = allEntries[i];
 
-        batchDecodeResults.push(result);
-
-        // Create thumbnail
-        var thumbCanvas = document.createElement('canvas');
-        thumbCanvas.width = 100;
-        thumbCanvas.height = 75;
-        var thumbCtx = thumbCanvas.getContext('2d');
-        thumbCtx.drawImage(result.canvas, 0, 0, 100, 75);
-
-        var item = document.createElement('div');
-        item.className = 'batch-item';
-        item.innerHTML = '<img class="batch-thumb" src="' + thumbCanvas.toDataURL() + '">' +
-          '<div class="batch-item-name">' + files[i].name + '</div>' +
-          '<div class="batch-item-info">' + result.width + 'x' + result.height + ' | ' + result.format + '</div>' +
-          '<div class="batch-item-timing">' + formatTime(result.elapsed) + '</div>';
-        batchList.appendChild(item);
-      } catch (err) {
+      if (entry.error) {
         var errItem = document.createElement('div');
         errItem.className = 'batch-item error';
-        errItem.innerHTML = '<div class="batch-item-name">' + files[i].name + '</div>' +
-          '<div class="batch-item-error">' + err.message + '</div>';
+        errItem.innerHTML = '<div class="batch-item-name">' + entry.name + '</div>' +
+          '<div class="batch-item-error">' + entry.error + '</div>';
         batchList.appendChild(errItem);
+      } else {
+        try {
+          var startTime = performance.now();
+          var result = await decodeData(entry.text);
+          result.elapsed = performance.now() - startTime;
+          result.filename = entry.name.replace(/\.[^.]+$/, '') + '.png';
+
+          batchDecodeResults.push(result);
+
+          // Create thumbnail
+          var thumbCanvas = document.createElement('canvas');
+          thumbCanvas.width = 100;
+          thumbCanvas.height = 75;
+          var thumbCtx = thumbCanvas.getContext('2d');
+          thumbCtx.drawImage(result.canvas, 0, 0, 100, 75);
+
+          var item = document.createElement('div');
+          item.className = 'batch-item';
+          item.innerHTML = '<img class="batch-thumb" src="' + thumbCanvas.toDataURL() + '">' +
+            '<div class="batch-item-name">' + entry.name + '</div>' +
+            '<div class="batch-item-info">' + result.width + 'x' + result.height + ' | ' + result.format + '</div>' +
+            '<div class="batch-item-timing">' + formatTime(result.elapsed) + '</div>';
+          batchList.appendChild(item);
+        } catch (err) {
+          var errItem2 = document.createElement('div');
+          errItem2.className = 'batch-item error';
+          errItem2.innerHTML = '<div class="batch-item-name">' + entry.name + '</div>' +
+            '<div class="batch-item-error">' + err.message + '</div>';
+          batchList.appendChild(errItem2);
+        }
       }
 
-      document.getElementById('decoder-batch-info').textContent = (i + 1) + ' / ' + files.length;
+      document.getElementById('decoder-batch-info').textContent = (i + 1) + ' / ' + allEntries.length;
     }
 
     var totalElapsed = performance.now() - totalStart;
@@ -725,6 +764,111 @@ var App = (function () {
   }
 
   // ============================================================
+  // ZIP Reading
+  // ============================================================
+  function readZipFile(zipData) {
+    var files = [];
+    var data = new Uint8Array(zipData);
+
+    // Find end of central directory
+    var eocdOffset = -1;
+    for (var i = data.length - 22; i >= 0; i--) {
+      if (data[i] === 0x50 && data[i+1] === 0x4B && data[i+2] === 0x05 && data[i+3] === 0x06) {
+        eocdOffset = i;
+        break;
+      }
+    }
+    if (eocdOffset < 0) throw new Error('Invalid ZIP file');
+
+    var centralDirOffset = data[eocdOffset + 16] | (data[eocdOffset + 17] << 8) | (data[eocdOffset + 18] << 16) | (data[eocdOffset + 19] << 24);
+    var numEntries = data[eocdOffset + 10] | (data[eocdOffset + 11] << 8);
+
+    var pos = centralDirOffset;
+    for (var e = 0; e < numEntries; e++) {
+      var compression = data[pos + 10] | (data[pos + 11] << 8);
+      var compSize = data[pos + 20] | (data[pos + 21] << 8) | (data[pos + 22] << 16) | (data[pos + 23] << 24);
+      var uncompSize = data[pos + 24] | (data[pos + 25] << 8) | (data[pos + 26] << 16) | (data[pos + 27] << 24);
+      var nameLen = data[pos + 28] | (data[pos + 29] << 8);
+      var extraLen = data[pos + 30] | (data[pos + 31] << 8);
+      var localOffset = data[pos + 42] | (data[pos + 43] << 8) | (data[pos + 44] << 16) | (data[pos + 45] << 24);
+      var name = new TextDecoder().decode(data.slice(pos + 46, pos + 46 + nameLen));
+
+      // Skip directories
+      if (name.endsWith('/')) {
+        pos += 46 + nameLen + extraLen + (data[pos + 32] | (data[pos + 33] << 8));
+        continue;
+      }
+
+      // Read local file header to get data offset
+      var localNameLen = data[localOffset + 26] | (data[localOffset + 27] << 8);
+      var localExtraLen = data[localOffset + 28] | (data[localOffset + 29] << 8);
+      var dataOffset = localOffset + 30 + localNameLen + localExtraLen;
+      var fileData = data.slice(dataOffset, dataOffset + compSize);
+
+      if (compression === 0) {
+        // Store mode (no compression)
+        files.push({ name: name, data: new Uint8Array(fileData) });
+      } else if (compression === 8) {
+        // Deflate - use DecompressionStream if available
+        files.push({ name: name, data: new Uint8Array(fileData), compressed: true });
+      }
+
+      pos += 46 + nameLen + extraLen + (data[pos + 32] | (data[pos + 33] << 8));
+    }
+
+    return files;
+  }
+
+  async function decompressFile(file) {
+    if (!file.compressed) return file.data;
+
+    // Use DecompressionStream API if available
+    if (typeof DecompressionStream !== 'undefined') {
+      var ds = new DecompressionStream('deflate');
+      var writer = ds.writable.getWriter();
+      var reader = ds.readable.getReader();
+
+      writer.write(file.data);
+      writer.close();
+
+      var chunks = [];
+      while (true) {
+        var result = await reader.read();
+        if (result.done) break;
+        chunks.push(result.value);
+      }
+
+      var totalLength = chunks.reduce(function (acc, c) { return acc + c.length; }, 0);
+      var output = new Uint8Array(totalLength);
+      var offset = 0;
+      for (var i = 0; i < chunks.length; i++) {
+        output.set(chunks[i], offset);
+        offset += chunks[i].length;
+      }
+      return output;
+    }
+
+    throw new Error('DecompressionStream not supported in this browser');
+  }
+
+  async function extractZipEntries(zipData) {
+    var entries = readZipFile(zipData);
+    var results = [];
+
+    for (var i = 0; i < entries.length; i++) {
+      try {
+        var data = await decompressFile(entries[i]);
+        var text = new TextDecoder().decode(data);
+        results.push({ name: entries[i].name, text: text, data: data });
+      } catch (err) {
+        results.push({ name: entries[i].name, error: err.message });
+      }
+    }
+
+    return results;
+  }
+
+  // ============================================================
   // Utilities
   // ============================================================
   function hexToRgb(hex) {
@@ -747,6 +891,15 @@ var App = (function () {
       reader.onload = function () { resolve(reader.result); };
       reader.onerror = reject;
       reader.readAsText(file);
+    });
+  }
+
+  function readFileAsArrayBuffer(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
     });
   }
 

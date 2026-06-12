@@ -38,7 +38,7 @@ var I18N = {
     decoder_title: '序列解码',
     decoder_input_label: '序列数据：',
     decoder_placeholder: '粘贴 iTerm2 或 Sixel 序列到此处...',
-    decoder_or_file: '或从文件加载（支持多文件）',
+    decoder_or_file: '或从文件加载（支持多文件和 ZIP）',
     decoder_format: '格式检测：',
     format_auto: '自动检测',
     decoder_decode: '解码',
@@ -58,7 +58,7 @@ var I18N = {
     timing_decode: '解码耗时',
     timing_batch: '总耗时',
     // Footer
-    footer: '基于 <a href="https://github.com/hzeller/timg" target="_blank">timg</a>、<a href="https://github.com/atanunq/viu" target="_blank">viu</a> 和 <a href="https://github.com/PLACEHOLDER/sixel-web" target="_blank">sixel-web</a> 算法',
+    footer: 'TermPix - 终端图片编解码工具',
     // Toast
     toast_copied: '已复制到剪贴板',
     toast_exported: '已导出文件',
@@ -107,7 +107,7 @@ var I18N = {
     decoder_title: 'Sequence Decoder',
     decoder_input_label: 'Sequence Data:',
     decoder_placeholder: 'Paste iTerm2 or Sixel sequence here...',
-    decoder_or_file: 'Or load from file (multi-file supported)',
+    decoder_or_file: 'Or load from file (multi-file and ZIP supported)',
     decoder_format: 'Format Detection:',
     format_auto: 'Auto Detect',
     decoder_decode: 'Decode',
@@ -127,7 +127,7 @@ var I18N = {
     timing_decode: 'Decode Time',
     timing_batch: 'Total Time',
     // Footer
-    footer: 'Based on <a href="https://github.com/hzeller/timg" target="_blank">timg</a>, <a href="https://github.com/atanunq/viu" target="_blank">viu</a> and <a href="https://github.com/PLACEHOLDER/sixel-web" target="_blank">sixel-web</a>',
+    footer: 'TermPix - Terminal Image Encoder/Decoder',
     // Toast
     toast_copied: 'Copied to clipboard',
     toast_exported: 'File exported',
