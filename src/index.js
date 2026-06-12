@@ -1,10 +1,12 @@
 /**
- * iTerm2-cli - Terminal image encoder/decoder
+ * TermPix CLI - Terminal image encoder/decoder v0.0.1
  *
  * Supports iTerm2 and Sixel protocols.
  */
 
 'use strict';
+
+const VERSION = '0.0.1';
 
 const { Framebuffer } = require('./framebuffer');
 const { ImageLoader } = require('./image-loader');
@@ -18,6 +20,7 @@ const { applyBayerDither, applyFloydSteinberg } = require('./dither');
 const { encryptData, decryptData, isEncrypted, generatePassword } = require('./crypto');
 
 module.exports = {
+  VERSION,
   Framebuffer,
   ImageLoader,
   Scaler,

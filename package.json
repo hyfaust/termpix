@@ -1,6 +1,6 @@
 {
   "name": "termpix",
-  "version": "2.0.0",
+  "version": "0.0.1",
   "description": "Terminal image encoder/decoder supporting iTerm2 and Sixel protocols",
   "main": "src/index.js",
   "bin": {
