@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TermPix - Terminal Image Encoder/Decoder</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <div class="header-left">
+          <img src="favicon.svg" alt="Logo" class="logo">
+          <h1>TermPix</h1>
+        </div>
+        <div class="header-right">
+          <button id="lang-switch" class="icon-btn" title="切换语言 / Switch Language">
+            <span id="lang-label">EN</span>
+          </button>
+          <a href="https://github.com/PLACEHOLDER/termpix" target="_blank" class="icon-btn github-link" title="GitHub">
+            <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+      <p class="subtitle" data-i18n="subtitle">终端图片查看器 & iTerm2/Sixel 协议编解码工具</p>
+    </header>
+
+    <main>
+      <!-- Tab Navigation -->
+      <nav class="tabs">
+        <button class="tab active" data-tab="encoder" data-i18n="tab_encoder">编码器</button>
+        <button class="tab" data-tab="decoder" data-i18n="tab_decoder">解码器</button>
+      </nav>
+
+      <!-- ========== Encoder Tab ========== -->
+      <section id="encoder" class="tab-content active">
+        <div class="panel">
+          <h2 data-i18n="encoder_title">图片编码</h2>
+
+          <!-- Image Input -->
+          <div class="input-group">
+            <label data-i18n="encoder_source">图片来源：</label>
+            <div class="file-input">
+              <input type="file" id="encoder-file" accept="image/*" multiple>
+              <button id="encoder-paste" data-i18n="encoder_paste">粘贴剪贴板</button>
+            </div>
+            <div class="url-input">
+              <input type="text" id="encoder-url" data-i18n-placeholder="encoder_url_placeholder" placeholder="或输入图片 URL...">
+              <button id="encoder-load-url" data-i18n="encoder_load">加载</button>
+            </div>
+            <div class="drag-zone" id="encoder-drop">
+              <p data-i18n="encoder_drop">拖拽图片到此处（支持多文件）</p>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div class="preview-container">
+            <h3 data-i18n="encoder_preview">原始图片</h3>
+            <canvas id="encoder-preview" width="200" height="200"></canvas>
+            <div class="image-info" id="encoder-info"></div>
+          </div>
+
+          <!-- Settings -->
+          <div class="settings">
+            <h3 data-i18n="encoder_settings">编码设置</h3>
+
+            <div class="setting-row">
+              <label data-i18n="encoder_format">输出格式：</label>
+              <select id="encoder-format">
+                <option value="iterm2">iTerm2</option>
+                <option value="sixel">Sixel</option>
+              </select>
+            </div>
+
+            <div class="setting-row">
+              <label data-i18n="encoder_width">最大宽度（像素）：</label>
+              <input type="number" id="encoder-width" value="800" min="10" max="4096">
+            </div>
+
+            <div class="setting-row">
+              <label data-i18n="encoder_height">最大高度（像素）：</label>
+              <input type="number" id="encoder-height" value="600" min="10" max="4096">
+            </div>
+
+            <div class="setting-row">
+              <label data-i18n="encoder_bg">背景色：</label>
+              <input type="color" id="encoder-bg" value="#000000">
+            </div>
+
+            <div class="setting-row">
+              <label class="checkbox">
+                <input type="checkbox" id="encoder-no-resize">
+                <span data-i18n="encoder_noresize">不压缩分辨率</span>
+              </label>
+            </div>
+
+            <!-- Sixel Options -->
+            <div class="sixel-options" id="sixel-options" style="display:none">
+              <div class="setting-row">
+                <label data-i18n="encoder_colors">颜色数：</label>
+                <input type="range" id="encoder-colors" min="2" max="256" value="256">
+                <span id="colors-value">256</span>
+              </div>
+              <div class="setting-row">
+                <label data-i18n="encoder_quantize">量化算法：</label>
+                <select id="encoder-quantize">
+                  <option value="median-cut">Median Cut</option>
+                  <option value="pnn">PNN（高质量）</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <label data-i18n="encoder_dither">抖动模式：</label>
+                <select id="encoder-dither">
+                  <option value="none" data-i18n="dither_none">无</option>
+                  <option value="bayer">Bayer</option>
+                  <option value="fs" selected>Floyd-Steinberg</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Encryption -->
+            <div class="setting-row">
+              <label class="checkbox">
+                <input type="checkbox" id="encoder-encrypt">
+                <span data-i18n="encoder_encrypt">加密 (AES-256-GCM)</span>
+              </label>
+            </div>
+            <div class="password-row" id="password-row" style="display:none">
+              <input type="password" id="encoder-password" data-i18n-placeholder="password_placeholder" placeholder="输入密码">
+              <button id="toggle-password" class="icon-btn" title="显示/隐藏">👁</button>
+              <button id="gen-password" class="icon-btn" title="生成随机密码">🎲</button>
+              <button id="copy-password" class="icon-btn" title="复制密码">📋</button>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="actions">
+            <button id="encoder-encode" class="primary" data-i18n="encoder_encode">编码</button>
+            <button id="encoder-batch" data-i18n="encoder_batch">批量编码</button>
+            <button id="encoder-copy" data-i18n="encoder_copy">复制输出</button>
+            <button id="encoder-export" data-i18n="encoder_export">导出文件</button>
+          </div>
+
+          <!-- Timing -->
+          <div class="timing" id="encoder-timing" style="display:none"></div>
+
+          <!-- Output -->
+          <div class="output-container">
+            <h3 data-i18n="encoder_output">编码输出</h3>
+            <div class="terminal-output" id="encoder-output"></div>
+          </div>
+
+          <!-- Batch Results -->
+          <div class="batch-results" id="encoder-batch-results" style="display:none">
+            <div class="batch-header">
+              <span id="encoder-batch-info"></span>
+              <button id="encoder-batch-zip" class="primary" data-i18n="download_zip">下载 ZIP</button>
+            </div>
+            <div id="encoder-batch-list" class="batch-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== Decoder Tab ========== -->
+      <section id="decoder" class="tab-content">
+        <div class="panel">
+          <h2 data-i18n="decoder_title">序列解码</h2>
+
+          <!-- Input -->
+          <div class="input-group">
+            <label data-i18n="decoder_input_label">序列数据：</label>
+            <textarea id="decoder-input" rows="6" data-i18n-placeholder="decoder_placeholder" placeholder="粘贴 iTerm2 或 Sixel 序列到此处..."></textarea>
+            <div class="file-input">
+              <input type="file" id="decoder-file" accept=".txt,.iterm2,.sixel,.six,.enc" multiple>
+              <span data-i18n="decoder_or_file">或从文件加载（支持多文件）</span>
+            </div>
+          </div>
+
+          <!-- Format Selection -->
+          <div class="settings">
+            <div class="setting-row">
+              <label data-i18n="decoder_format">格式检测：</label>
+              <select id="decoder-format">
+                <option value="auto" data-i18n="format_auto">自动检测</option>
+                <option value="iterm2">iTerm2</option>
+                <option value="sixel">Sixel</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="actions">
+            <button id="decoder-decode" class="primary" data-i18n="decoder_decode">解码</button>
+            <button id="decoder-batch" data-i18n="decoder_batch">批量解码</button>
+          </div>
+
+          <!-- Timing -->
+          <div class="timing" id="decoder-timing" style="display:none"></div>
+
+          <!-- Decoded Image -->
+          <div class="decoded-container" id="decoder-decoded-container" style="display:none">
+            <h3 data-i18n="decoder_decoded_title">解码图片</h3>
+            <canvas id="decoder-preview" width="200" height="200"></canvas>
+            <div class="result-info" id="decoder-info"></div>
+            <div class="actions">
+              <button id="decoder-download-png" data-i18n="decoder_download_png">下载 PNG</button>
+              <button id="decoder-download-jpeg" data-i18n="decoder_download_jpeg">下载 JPEG</button>
+            </div>
+          </div>
+
+          <!-- Batch Results -->
+          <div class="batch-results" id="decoder-batch-results" style="display:none">
+            <div class="batch-header">
+              <span id="decoder-batch-info"></span>
+              <button id="decoder-batch-zip" class="primary" data-i18n="download_zip">下载 ZIP</button>
+            </div>
+            <div id="decoder-batch-list" class="batch-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Password Modal -->
+    <div id="password-modal" class="modal" style="display:none">
+      <div class="modal-content">
+        <p data-i18n="modal_decrypt_msg">此文件已加密，请输入密码</p>
+        <input type="password" id="decrypt-password" data-i18n-placeholder="modal_password_placeholder" placeholder="输入解密密码">
+        <div id="decrypt-error" class="modal-error" style="display:none"></div>
+        <div class="modal-actions">
+          <button id="decrypt-ok" class="primary" data-i18n="modal_ok">确定</button>
+          <button id="decrypt-cancel" data-i18n="modal_cancel">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p data-i18n="footer">基于 <a href="https://github.com/hzeller/timg" target="_blank">timg</a>、<a href="https://github.com/atanunq/viu" target="_blank">viu</a> 和 <a href="https://github.com/PLACEHOLDER/sixel-web" target="_blank">sixel-web</a> 算法</p>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/i18n.js"></script>
+  <script src="js/framebuffer.js"></script>
+  <script src="js/scaler.js"></script>
+  <script src="js/image-loader.js"></script>
+  <script src="js/quantize.js"></script>
+  <script src="js/dither.js"></script>
+  <script src="js/sixel-encoder.js"></script>
+  <script src="js/sixel-decoder.js"></script>
+  <script src="js/iterm2-encoder.js"></script>
+  <script src="js/iterm2-decoder.js"></script>
+  <script src="js/crypto.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
